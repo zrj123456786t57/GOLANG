@@ -1,0 +1,113 @@
+作业lv2
+
+package main
+
+import (
+ "fmt"
+ "io"
+ "os"
+ "time"
+)
+type TimestampWriter struct {
+ timestamp time.Time
+ writer    io.Writer
+}
+func (tw *TimestampWriter) Write(p []byte) (n int, err error) {
+ line := fmt.Sprintf("%s %s", tw.timestamp, string(p))
+ return os.Stdout.Write([]byte(line))
+}
+
+func main() {
+ file, err := os.OpenFile("log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+ if err != nil {
+ fmt.Println("无法打开日志文件:", err)
+ return
+ }
+ defer file.Close()
+
+ logWriter := &TimestampWriter{
+ timestamp: time.Now(),
+ writer:    file,
+ }
+ fmt.Fprintln(logWriter, "用户登录")
+ time.Sleep(2 * time.Second)
+ fmt.Fprintln(logWriter, "用户执行操作A")
+ time.Sleep(1 * time.Second)
+ fmt.Fprintln(logWriter, "用户执行操作B")
+}
+
+
+
+
+go语言lv pro max
+
+package main
+import (
+ "fmt"
+ "os"
+ "path/filepath"
+ "time"
+)
+func main() {
+ srcDir := "/path/to/source"
+ dstDir := "/path/to/destination"
+ go watch(srcDir)
+ for {
+ files, err := os.ReadDir(srcDir)
+ if err != nil {
+ fmt.Println("Error reading source directory:", err)
+ continue
+ }
+ for _, file := range files {
+ srcFilePath := filepath.Join(srcDir, file.Name())
+ dstFilePath := filepath.Join(dstDir, file.Name())
+ if file.IsDir() {
+ // 如果是子目录，递归处理
+ syncDir(srcFilePath, dstFilePath)
+ } else {
+ if isModified(srcFilePath) {
+ syncFile(srcFilePath, dstFilePath)
+ }
+ }
+ }
+ time.Sleep(time.Second)
+ }
+}
+func watch(dir string) {
+ ticker := time.NewTicker(time.Second)
+ defer ticker.Stop()
+ for range ticker.C {
+ files, err := os.ReadDir(dir)
+ if err != nil {
+ fmt.Println("Error reading source directory:", err)
+ continue
+ }
+ for _, file := range files {
+ path := filepath.Join(dir, file.Name())
+ if file.IsDir() {
+ syncDir(path, path)
+ } else {
+ if isModified(path) {
+ syncFile(path, path)
+ }
+ }
+ }
+ time.Sleep(time.Second)
+ }
+}
+func isModified(path string) bool {
+ fileInfo, err := os.Stat(path)
+ if err != nil {
+ fmt.Println("Error getting file info:", err)
+ return false
+ }
+ return fileInfo.ModTime().After(time.Now().Add(-1 * time.Second))
+}
+func syncFile(srcPath, dstPath string) {
+ srcFile, err := os.Open(srcPath)
+ if err != nil {
+ fmt.Println("Error opening source file:", err)
+ return
+ } defer srcFile.Close()
+ dstFile, err := os.Create(dstPath) if err != nil { fmt.Println("Error creating destination file:", err);
+ return } defer dstFile.Close() io.Copy(dstFile, srcFile) }          
